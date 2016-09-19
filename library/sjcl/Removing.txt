@@ -1,0 +1,5 @@
+in loginApp.component.ts
+	-line 52, require
+		-all functions use encriptLib ctrF it
+APP.JS
+	- line~33, require

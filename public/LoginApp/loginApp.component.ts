@@ -13,6 +13,7 @@
 import {Component} from '@angular/core';
 import {Http, Headers} from '@angular/http';
 //import {hash} from 'bcrypt';
+//import * as bycrpt from 'bcrypt';
 
 @Component({
     selector:'login-app',
@@ -36,46 +37,46 @@ import {Http, Headers} from '@angular/http';
 export class LogInComponent{
     
     userInfo ={
-        "userName": '',
-        "password": '',
+        "userName": null,
+        "password": null,
         "displayName": '',
-        "email":''
+        "email":null
     };
     
     http;
-    bcrypt;
+    encriptLib;
     
     constructor(http: Http){
         this.http = http;
+        //load in encryption library 
+        this.encriptLib = require('../../library/sjcl/sjcl.js');
     }
     
     submitLogin(){      
-        var headers = new Headers();
+        if(this.userInfo.password.length <= 0){
+            console.log('no password entered');
+            return;
+        }
+        //encrypt password (our-password, their-password)
+        var safePass = this.encriptLib.encrypt("TEMP-KEY",this.userInfo.password);
+        // DECRYPT this.encriptLib.decrypt(this.userInfo.userName,safePass);
+        
+        var sendObj ={username: this.userInfo.userName, password: safePass, email: this.userInfo.email};
+        this.http.post('/login',sendObj)
+        .map(res => res.json())
+            .subscribe(res => {
+                console.log(res);
+                alert('logged in');
+            });
+    }
+
+    registerUser(){
         this.http.post('/',{username: this.userInfo.userName, password: this.userInfo.password })
         .map(res => res.json())
             .subscribe(res => {
                 console.log(res);
                 alert('logged in');
             });
-        // this.bcrypt.hash(this.userInfo.password, 10, function(err, hash){
-        //     this.http.post('/login', {username: this.userName, password: hash})
-        //     .map(res => res.json())
-        //     .subscribe(res => {
-        //         console.log(res);
-        //         alert('logged in');
-        //     }) 
-        // });  
-    }
-
-    registerUser(){
-        this.bcrypt.hash(this.userInfo.password, 10, function(err, hash){
-            this.http.post('/register', {username: this.userName, password: hash, displayName: this.displayName, email: this.email})
-            .map( res => res.json())
-            .subscribe(res => {
-                console.log(res);
-                alert('registered');
-            })
-        });
     }
 
     forgotPassword(){//TODO: not implemented backend?
@@ -84,11 +85,11 @@ export class LogInComponent{
     }
 
     forgotEmail(){//TODO: not implemented backend?
-        this.http.get('user' + this.userInfo.displayName)
+        this.http.post('/',{username: this.userInfo.userName, password: this.userInfo.password })
         .map(res => res.json())
-        .subscribe(res => {
-            console.log(res);
-            alert('email'); //send email to them (server side?)
-        })
+            .subscribe(res => {
+                console.log(res);
+                alert('logged in');
+            });
     }
 }

@@ -13,16 +13,22 @@ var http_1 = require('@angular/http');
 var LogInComponent = (function () {
     function LogInComponent(http) {
         this.userInfo = {
-            "userName": '',
-            "password": '',
+            "userName": null,
+            "password": null,
             "displayName": '',
-            "email": ''
+            "email": null
         };
         this.http = http;
+        this.encriptLib = require('../../library/sjcl/sjcl.js');
     }
     LogInComponent.prototype.submitLogin = function () {
-        var headers = new http_1.Headers();
-        this.http.post('/', { username: this.userInfo.userName, password: this.userInfo.password })
+        if (this.userInfo.password.length <= 0) {
+            console.log('no password entered');
+            return;
+        }
+        var safePass = this.encriptLib.encrypt("TEMP-KEY", this.userInfo.password);
+        var sendObj = { username: this.userInfo.userName, password: safePass, email: this.userInfo.email };
+        this.http.post('/login', sendObj)
             .map(function (res) { return res.json(); })
             .subscribe(function (res) {
             console.log(res);
@@ -30,24 +36,22 @@ var LogInComponent = (function () {
         });
     };
     LogInComponent.prototype.registerUser = function () {
-        this.bcrypt.hash(this.userInfo.password, 10, function (err, hash) {
-            this.http.post('/register', { username: this.userName, password: hash, displayName: this.displayName, email: this.email })
-                .map(function (res) { return res.json(); })
-                .subscribe(function (res) {
-                console.log(res);
-                alert('registered');
-            });
+        this.http.post('/', { username: this.userInfo.userName, password: this.userInfo.password })
+            .map(function (res) { return res.json(); })
+            .subscribe(function (res) {
+            console.log(res);
+            alert('logged in');
         });
     };
     LogInComponent.prototype.forgotPassword = function () {
         console.log('forgot password');
     };
     LogInComponent.prototype.forgotEmail = function () {
-        this.http.get('user' + this.userInfo.displayName)
+        this.http.post('/', { username: this.userInfo.userName, password: this.userInfo.password })
             .map(function (res) { return res.json(); })
             .subscribe(function (res) {
             console.log(res);
-            alert('email');
+            alert('logged in');
         });
     };
     LogInComponent = __decorate([
