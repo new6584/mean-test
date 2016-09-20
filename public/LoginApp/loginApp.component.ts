@@ -75,8 +75,7 @@ export class LogInComponent{
         var messageObj = {username: this.userInfo.userName, 
                             password:  pw,
                             displayName: this.userInfo.displayName,
-                            email: this.userInfo.email
-                        }
+                            email: this.userInfo.email}
         this.http.post('/register', messageObj)
         .map(res => res.json())
             .subscribe(res => {

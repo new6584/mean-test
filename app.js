@@ -38,65 +38,103 @@ var sjcl = require('./library/sjcl/sjcl.js');//encription library
 var encryptKey = "TEMP-KEY";
 
 app.post('/login', function(request,response){
-    var myUsername = request.body.username;
-    var myEmail = request.body.email;
-    //which name varification they wanna use
-    var selectObj;
-    if(myUsername){
-        selectObj = {username: myUsername};
-    }else if(myEmail){
-        selectObj = {email: myEmail};
-    }
-    //didnt send either option
-    if(!selectObj){
-        response.send({error:'no name/email entered'});
-        console.log("no user info from client")
-        return;
-    }
-    //check the db
-    User.find(selectObj,function(err,user){
-        if(err) throw err;
-        var myPass = saltyHash(request.body.password, user.salt);
-        if(myPass === user.password){
-            //start passport
-            //send them to home page
-            console.log("successful login");
-        }else{
-            //bad shit
-            console.log("login failed")
-            response.send({error:'bad pass'});
-        }
-    });
-    response.send();
+    login(request,response);
 });
 
 app.post('/register', function(request,response){
     var myUsername = request.body.username;
     var myEmail = request.body.email;
-    var myDisplayname = request.body.displayname;
-    //validate
+    var myDisplayname = request.body.displayName;
 
-    //make salt and encode 
-    var mySalt = sjcl.codec.base64.fromBits(sjcl.random.randomWords(10));
-    //hash password
+    //validate ... TODO: got to be a better way to do this
+    var available;
+    var conflicts ={};
+    User.find({username: myUsername},function(err,user){
+        if(user.length != 0){//username available
+            conflicts.username= true;
+        }
+        User.find({email:myEmail},function(req,aUser){
+            if(aUser.length!=0){
+                conflicts.email = true;
+            }
+            User.find({displayName: myDisplayname},function(r,u){
+                if(u.length!=0){
+                    conflicts.displayName = true;
+                }
+                if(!conflicts.username && !conflicts.email && !conflicts.username){
+                    //make salt and encode 
+                    var mySalt = new Buffer(sjcl.codec.base64.fromBits(sjcl.random.randomWords(10)),'base64');
+                    //hash password
 
-    var myPassword = saltyHash(request.body.password, mySalt);
-    //store it all
-    var newUser= new User({
-        username: myUsername,
-        password: myPassword,
-        displayname: myDisplayname,
-        email: myEmail,
-        salt: mySalt
+                    var myPassword = saltyHash(request.body.password, mySalt);
+                    //store it all
+                    var newUser= new User({
+                        username: myUsername,
+                        password: myPassword,
+                        displayName: myDisplayname,
+                        email: myEmail,
+                        salt: mySalt
+                    });
+                    newUser.save(function(err){//TODO: pre make sure types 
+                        if(err){ 
+                            console.log(err);
+                            sendToClient(response,{error:"failed_to_register"});
+                            return;
+                            //error page?
+                        }
+                        //log them in using newly registered account info
+                        console.log("logging in from register");
+                        login(request,response);
+                    });
+
+                }else{
+                    conflicts.error = "taken";
+                    sendToClient(response,conflicts);
+                }//end reg check
+            });
+        });
     });
-    newUser.save(function(err){
-        if(err) throw err;
-        console.log({error: "made user"});
-    })
+});//end /register
 
-});
+function login(request,response){
+    //which name varification they wanna use
+    var selectObj;
+    if(request.body.username){
+        selectObj = {username: request.body.username};
+    }else if(request.body.email){
+        selectObj = {email: request.body.email};
+    }
 
-function saltyHash(pass, codedSalt){
+    //didnt send either option
+    if(!selectObj){
+        sendToClient(response,{error:"no_username"});
+        console.log("no credentials")
+        return;
+    }
+
+    //check the db
+    User.find(selectObj,function(err,user){
+        if(err){ console.log(err); }
+        if(user.length != 1){
+            console.log('no user of with info: '+selectObj[1]);
+            sendToClient(response,{error:"username_dne"});
+            return; 
+        }
+        var myPass = saltyHash(request.body.password, user[0].salt);
+
+        if(myPass == user[0].password){
+            //TODO: start passport, redirect user
+            console.log("logged in");
+        }else{
+            console.log("bad pass");
+            sendToClient(response,{error:"wrong_password"});
+        }
+
+    });
+}
+
+function saltyHash(pass, saltBuffer){
+    var codedSalt = saltBuffer.toString('base64');
     //decrpyt
     var plaintext = sjcl.decrypt(encryptKey, pass);
     //decode salt
@@ -105,4 +143,8 @@ function saltyHash(pass, codedSalt){
     var hKey =sjcl.misc.pbkdf2(plaintext, mySalt, 1000, 256);
     //encode
     return sjcl.codec.base64.fromBits(hKey);
+}
+
+function sendToClient(response, obj){
+    response.send(obj);
 }

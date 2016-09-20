@@ -40,8 +40,7 @@ var LogInComponent = (function () {
         var messageObj = { username: this.userInfo.userName,
             password: pw,
             displayName: this.userInfo.displayName,
-            email: this.userInfo.email
-        };
+            email: this.userInfo.email };
         this.http.post('/register', messageObj)
             .map(function (res) { return res.json(); })
             .subscribe(function (res) {

@@ -5,9 +5,9 @@ var userSchema = new Schema(
   {
     username: { type: String,  unique: true, required: true},
     password: {type: String , required: true},
-    displayName: {type: String, required: true},
+    displayName: {type: String, unique:true, required: true},
     email:  {type: String, unique: true, required: true},
-    salt: {type:String,required:true}
+    salt: {type: Buffer,required:true}
   }
 );
 
