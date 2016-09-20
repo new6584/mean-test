@@ -71,7 +71,13 @@ export class LogInComponent{
     }
 
     registerUser(){
-        this.http.post('/',{username: this.userInfo.userName, password: this.userInfo.password })
+        var pw =  this.encriptLib.encrypt("TEMP-KEY",this.userInfo.password);
+        var messageObj = {username: this.userInfo.userName, 
+                            password:  pw,
+                            displayName: this.userInfo.displayName,
+                            email: this.userInfo.email
+                        }
+        this.http.post('/register', messageObj)
         .map(res => res.json())
             .subscribe(res => {
                 console.log(res);

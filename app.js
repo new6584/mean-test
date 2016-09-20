@@ -9,9 +9,6 @@ var express = require('express'),
     api = require('./app/routes/api.js'),
     mongoose = require('mongoose');
 
-var sjcl = require('./library/sjcl/sjcl.js');//encription library
-var encryptKey = "TEMP-KEY";
-
 app.set('port', (process.env.PORT || 3000));
 
 app.use(express.static(staticRoot));
@@ -32,18 +29,22 @@ app.use('/', api);
 app.listen(app.get('port'), function(req,res) {  
     console.log('app running on port', app.get('port'));
     mongoose.connect('mongodb://localhost/razTestDB');
+    console.log('mongoose connected');
 });
 
 //should probaly seperate these to another file
+var User = require('./app/models/models').User;
+var sjcl = require('./library/sjcl/sjcl.js');//encription library
+var encryptKey = "TEMP-KEY";
 
 app.post('/login', function(request,response){
     var myUsername = request.body.username;
     var myEmail = request.body.email;
     //which name varification they wanna use
     var selectObj;
-    if(username){
+    if(myUsername){
         selectObj = {username: myUsername};
-    }else if(email){
+    }else if(myEmail){
         selectObj = {email: myEmail};
     }
     //didnt send either option
@@ -53,7 +54,6 @@ app.post('/login', function(request,response){
         return;
     }
     //check the db
-    var User = mongoose.model('User', userSchema);
     User.find(selectObj,function(err,user){
         if(err) throw err;
         var myPass = saltyHash(request.body.password, user.salt);
@@ -71,25 +71,27 @@ app.post('/login', function(request,response){
 });
 
 app.post('/register', function(request,response){
-    var username = request.body.username;
-    var email = request.body.email;
-    var displayname = request.body.displayname;
+    var myUsername = request.body.username;
+    var myEmail = request.body.email;
+    var myDisplayname = request.body.displayname;
+    //validate
+
     //make salt and encode 
     var mySalt = sjcl.codec.base64.fromBits(sjcl.random.randomWords(10));
     //hash password
-    var password = saltyHash(request.body.password, mySalt);
+
+    var myPassword = saltyHash(request.body.password, mySalt);
     //store it all
-    var User = require();
-    var newUser= User({
-        username: username,
-        password: password,
-        displayName: displayname,
-        email: email,
+    var newUser= new User({
+        username: myUsername,
+        password: myPassword,
+        displayname: myDisplayname,
+        email: myEmail,
         salt: mySalt
     });
     newUser.save(function(err){
         if(err) throw err;
-        console.log("made user");
+        console.log({error: "made user"});
     })
 
 });

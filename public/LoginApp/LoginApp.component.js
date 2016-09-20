@@ -36,7 +36,13 @@ var LogInComponent = (function () {
         });
     };
     LogInComponent.prototype.registerUser = function () {
-        this.http.post('/', { username: this.userInfo.userName, password: this.userInfo.password })
+        var pw = this.encriptLib.encrypt("TEMP-KEY", this.userInfo.password);
+        var messageObj = { username: this.userInfo.userName,
+            password: pw,
+            displayName: this.userInfo.displayName,
+            email: this.userInfo.email
+        };
+        this.http.post('/register', messageObj)
             .map(function (res) { return res.json(); })
             .subscribe(function (res) {
             console.log(res);
