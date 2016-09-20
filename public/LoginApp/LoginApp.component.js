@@ -19,14 +19,24 @@ var LogInComponent = (function () {
             "email": null
         };
         this.http = http;
+        var self = this;
         this.encriptLib = require('../../library/sjcl/sjcl.js');
+        setInterval(function () {
+            self.http.post("/nossl", {})
+                .map(function (res) { return res.json(); })
+                .subscribe(function (res) {
+                console.log(res);
+                self.KEY = res.userVal;
+            });
+        }, 10000);
+        console.log(this.KEY);
     }
     LogInComponent.prototype.submitLogin = function () {
         if (this.userInfo.password.length <= 0) {
             console.log('no password entered');
             return;
         }
-        var safePass = this.encriptLib.encrypt("TEMP-KEY", this.userInfo.password);
+        var safePass = this.encriptLib.encrypt(this.KEY, this.userInfo.password);
         var sendObj = { username: this.userInfo.userName, password: safePass, email: this.userInfo.email };
         this.http.post('/login', sendObj)
             .map(function (res) { return res.json(); })
@@ -36,7 +46,7 @@ var LogInComponent = (function () {
         });
     };
     LogInComponent.prototype.registerUser = function () {
-        var pw = this.encriptLib.encrypt("TEMP-KEY", this.userInfo.password);
+        var pw = this.encriptLib.encrypt(this.KEY, this.userInfo.password);
         var messageObj = { username: this.userInfo.userName,
             password: pw,
             displayName: this.userInfo.displayName,

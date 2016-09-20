@@ -35,8 +35,21 @@ app.listen(app.get('port'), function(req,res) {
 //should probaly seperate these to another file
 var User = require('./app/models/models').User;
 var sjcl = require('./library/sjcl/sjcl.js');//encription library
-var encryptKey = "TEMP-KEY";
 
+/**********************************temp*ssl*replacement***************************************************/
+var encryptKey = makeRandomWord();
+function makeRandomWord(){
+    var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for( var i=0; i < 25; i++ )
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    return text;
+}
+/***********************************temp*ssl*replacement**************************************************/
+
+app.post('/nossl',function(request,response){
+    sendToClient(response,{userVal:encryptKey});
+});
 app.post('/login', function(request,response){
     login(request,response);
 });

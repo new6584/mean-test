@@ -45,11 +45,21 @@ export class LogInComponent{
     
     http;
     encriptLib;
-    
+    KEY;
     constructor(http: Http){
         this.http = http;
         //load in encryption library 
+        var self = this;
         this.encriptLib = require('../../library/sjcl/sjcl.js');
+        
+        self.http.post("/nossl",{})
+            .map(res => res.json())
+            .subscribe(res => {
+                console.log(res);
+                self.KEY = res.userVal;
+            });
+
+        console.log(this.KEY);
     }
     
     submitLogin(){      
@@ -58,7 +68,7 @@ export class LogInComponent{
             return;
         }
         //encrypt password (our-password, their-password)
-        var safePass = this.encriptLib.encrypt("TEMP-KEY",this.userInfo.password);
+        var safePass = this.encriptLib.encrypt(this.KEY,this.userInfo.password);
         // DECRYPT this.encriptLib.decrypt(this.userInfo.userName,safePass);
         
         var sendObj ={username: this.userInfo.userName, password: safePass, email: this.userInfo.email};
@@ -71,7 +81,7 @@ export class LogInComponent{
     }
 
     registerUser(){
-        var pw =  this.encriptLib.encrypt("TEMP-KEY",this.userInfo.password);
+        var pw =  this.encriptLib.encrypt(this.KEY,this.userInfo.password);
         var messageObj = {username: this.userInfo.userName, 
                             password:  pw,
                             displayName: this.userInfo.displayName,

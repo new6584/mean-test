@@ -1,5 +1,12 @@
-in loginApp.component.ts
+
+LOGINAPP.COMPONENT.TS
 	-line 52, require
 		-all functions use encriptLib ctrF it
+	-change anything using this.KEY or self.KEY
+	-remove nossl http call in constructor
 APP.JS
-	- line~33, require
+	uses library for hash and salt
+	REMOVE network encryption type
+		-global variable--encryptKey ~line38
+		-in saltyHash()
+			-change var plaintext to decrypt using new method
