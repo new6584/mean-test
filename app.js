@@ -64,7 +64,7 @@ emailer.configure({
     verifyMailOptions: {
         from: 'Do Not Reply <Razu.Verifier_do_not_reply@gmail.com>',
         subject: 'Please confirm Razu account',
-        html: 'Click the following link to confirm your account:</p><p>${URL}</p>',
+        html: 'Click the following link to confirm your account:</p><a href="'+staticRoot+'${URL}">${URL}</a></p>',
         text: 'Please confirm your account by clicking the following link: ${URL}'
     }
 }, function(error, options){
