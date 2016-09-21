@@ -51,15 +51,12 @@ export class LogInComponent{
         //load in encryption library 
         var self = this;
         this.encriptLib = require('../../library/sjcl/sjcl.js');
-        
         self.http.post("/nossl",{})
             .map(res => res.json())
             .subscribe(res => {
                 console.log(res);
                 self.KEY = res.userVal;
             });
-
-        console.log(this.KEY);
     }
     
     submitLogin(){      

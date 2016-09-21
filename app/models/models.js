@@ -7,15 +7,26 @@ var userSchema = new Schema(
     password: {type: String , required: true},
     displayName: {type: String, unique:true, required: true},
     email:  {type: String, unique: true, required: true},
-    salt: {type: Buffer,required:true}
+    salt: {type: String,required:true}
   }
 );
-
-
 userSchema.index({username: 1})
-
 var User = mongoose.model('User', userSchema, 'User');
 
+var tempUserSchema = new Schema(
+  {
+    username: { type: String,  unique: true, required: true},
+    password: {type: String , required: true},
+    displayName: {type: String, unique:true, required: true},
+    email:  {type: String, unique: true, required: true},
+    salt: {type: String,required:true},
+    GENERATED_VERIFYING_URL: {type:String}
+  }
+);
+tempUserSchema.index({username:1})
+var TempUser = mongoose.model('TempUser',tempUserSchema,'TempUser');
+
 module.exports = {
-  User: User
+  User: User,
+  TempUser: TempUser
 };

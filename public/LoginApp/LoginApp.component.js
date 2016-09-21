@@ -21,15 +21,12 @@ var LogInComponent = (function () {
         this.http = http;
         var self = this;
         this.encriptLib = require('../../library/sjcl/sjcl.js');
-        setInterval(function () {
-            self.http.post("/nossl", {})
-                .map(function (res) { return res.json(); })
-                .subscribe(function (res) {
-                console.log(res);
-                self.KEY = res.userVal;
-            });
-        }, 10000);
-        console.log(this.KEY);
+        self.http.post("/nossl", {})
+            .map(function (res) { return res.json(); })
+            .subscribe(function (res) {
+            console.log(res);
+            self.KEY = res.userVal;
+        });
     }
     LogInComponent.prototype.submitLogin = function () {
         if (this.userInfo.password.length <= 0) {

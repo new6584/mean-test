@@ -7,11 +7,14 @@ var express = require('express'),
     app = express(),
     staticRoot = __dirname + '/',
     api = require('./app/routes/api.js'),
-    mongoose = require('mongoose');
+    schemas = require('./app/models/models'),
+    mongoose = require('mongoose'),
+    emailer = require('email-verification')(mongoose);
 
 app.set('port', (process.env.PORT || 3000));
-
 app.use(express.static(staticRoot));
+mongoose.connect('mongodb://localhost/razTestDB');
+console.log('mongoose connected');
 
 // view engine setup
 app.set('views', path.join(staticRoot, '\\app\\views'));
@@ -28,12 +31,10 @@ app.use('/', api);
 
 app.listen(app.get('port'), function(req,res) {  
     console.log('app running on port', app.get('port'));
-    mongoose.connect('mongodb://localhost/razTestDB');
-    console.log('mongoose connected');
 });
 
 //should probaly seperate these to another file
-var User = require('./app/models/models').User;
+var User = schemas.User;
 var sjcl = require('./library/sjcl/sjcl.js');//encription library
 
 /**********************************temp*ssl*replacement***************************************************/
@@ -47,67 +48,110 @@ function makeRandomWord(){
 }
 /***********************************temp*ssl*replacement**************************************************/
 
-app.post('/nossl',function(request,response){
-    sendToClient(response,{userVal:encryptKey});
+/******************************verification**************************************/
+emailer.configure({
+    verificationURL: staticRoot+'email-verification?id=${URL}',
+    persistentUserModel: User,
+    tempUserCollection: 'razu_TempUser',
+
+    transportOptions: {
+        service: 'Gmail',
+        auth: {
+            user: 'Razu.Verifier@gmail.com',
+            pass: '~RazuMusic~'
+        }
+    },
+    verifyMailOptions: {
+        from: 'Do Not Reply <Razu.Verifier_do_not_reply@gmail.com>',
+        subject: 'Please confirm Razu account',
+        html: 'Click the following link to confirm your account:</p><p>${URL}</p>',
+        text: 'Please confirm your account by clicking the following link: ${URL}'
+    }
+}, function(error, options){
+    if(error){
+        console.log(error);
+    }
 });
-app.post('/login', function(request,response){
-    login(request,response);
+
+var TempUser = schemas.TempUser;
+emailer.configure({
+    tempUserModel: TempUser
+}, function(error, options){
+    if(error){
+        console.log(error);
+    }
 });
 
 app.post('/register', function(request,response){
     var myUsername = request.body.username;
     var myEmail = request.body.email;
     var myDisplayname = request.body.displayName;
-
-    //validate ... TODO: got to be a better way to do this
-    var available;
-    var conflicts ={};
-    User.find({username: myUsername},function(err,user){
-        if(user.length != 0){//username available
-            conflicts.username= true;
+    var mySalt = sjcl.codec.base64.fromBits(sjcl.random.randomWords(10));
+    //var mySalt = Buffer.alloc(rawSalt.length, rawSalt, 'base64');
+    //hash password
+    var myPassword = saltyHash(request.body.password, mySalt);
+    var newUser= new User({
+        username: myUsername,
+        password: myPassword,
+        displayName: myDisplayname,
+        email: myEmail,
+        salt: mySalt
+    });
+    emailer.createTempUser(newUser,function(err, existingPersistentUser, newTempUser){
+         if (err){
+             console.log(err);
+         }
+        // user already exists in persistent collection... 
+        if (existingPersistentUser){
+            sendToClient(response,{error:'taken'});
+            console.log('register- info taken');
+            return;
         }
-        User.find({email:myEmail},function(req,aUser){
-            if(aUser.length!=0){
-                conflicts.email = true;
-            }
-            User.find({displayName: myDisplayname},function(r,u){
-                if(u.length!=0){
-                    conflicts.displayName = true;
+        // a new user 
+        if (newTempUser) {
+            var URL = newTempUser[emailer.options.URLFieldName];
+            emailer.sendVerificationEmail(myEmail, URL, function(err, info) {
+                if (err){
+                   console.log(err); 
                 }
-                if(!conflicts.username && !conflicts.email && !conflicts.username){
-                    //make salt and encode 
-                    var mySalt = new Buffer(sjcl.codec.base64.fromBits(sjcl.random.randomWords(10)),'base64');
-                    //hash password
-
-                    var myPassword = saltyHash(request.body.password, mySalt);
-                    //store it all
-                    var newUser= new User({
-                        username: myUsername,
-                        password: myPassword,
-                        displayName: myDisplayname,
-                        email: myEmail,
-                        salt: mySalt
-                    });
-                    newUser.save(function(err){//TODO: pre make sure types 
-                        if(err){ 
-                            console.log(err);
-                            sendToClient(response,{error:"failed_to_register"});
-                            return;
-                            //error page?
-                        }
-                        //log them in using newly registered account info
-                        console.log("logging in from register");
-                        login(request,response);
-                    });
-
-                }else{
-                    conflicts.error = "taken";
-                    sendToClient(response,conflicts);
-                }//end reg check
+                console.log('sucess verification');
+                sendToClient(response,{verified:true});
             });
-        });
+        } else {
+            console.log('temp user exists');
+            sendToClient(response,{error:'taken'});
+        }
     });
 });//end /register
+
+app.get("/email-verification*",function(request,response){
+    var url = request.query.id;
+    emailer.confirmTempUser(url,function(err,user){
+        if(err){
+            console.log(err);
+        }
+        if(user){
+            emailer.sendConfirmationEmail(user['email'],function(err,info){
+                //redirect
+                console.log("got here");
+                response.redirect(staticRoot+"working");
+            });
+        }else{
+            //redirect 
+            console.log('redir to signup');
+        }
+
+    });
+});
+
+/******************************verification**************************************/
+
+app.post('/nossl',function(request,response){
+    sendToClient(response,{userVal:encryptKey});
+});
+app.post('/login', function(request,response){
+    login(request,response);
+});
 
 function login(request,response){
     //which name varification they wanna use
@@ -146,8 +190,8 @@ function login(request,response){
     });
 }
 
-function saltyHash(pass, saltBuffer){
-    var codedSalt = saltBuffer.toString('base64');
+function saltyHash(pass, codedSalt){
+    //var codedSalt = saltBuffer.toString('base64');
     //decrpyt
     var plaintext = sjcl.decrypt(encryptKey, pass);
     //decode salt
