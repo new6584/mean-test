@@ -56,7 +56,12 @@ var LogInComponent = (function () {
         });
     };
     LogInComponent.prototype.forgotPassword = function () {
-        console.log('forgot password');
+        this.http.post('/passwordRecover', { username: this.userInfo.userName, password: this.userInfo.password })
+            .map(function (res) { return res.json(); })
+            .subscribe(function (res) {
+            console.log(res);
+            alert('logged in');
+        });
     };
     LogInComponent.prototype.forgotEmail = function () {
         this.http.post('/', { username: this.userInfo.userName, password: this.userInfo.password })

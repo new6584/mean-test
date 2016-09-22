@@ -1,7 +1,7 @@
 var path = require('path');
 var staticRoot = path.dirname(require.main.filename)+'\\';
 var schemas = require('./models');
-console.log(staticRoot);
+
 module.exports = function(mongoose){//needs an instance of 
     var emailer = require('email-verification')(mongoose);
 
@@ -26,6 +26,7 @@ module.exports = function(mongoose){//needs an instance of
     }, function(error, options){
         if(error){
             console.log(error);
+            return;
         }
     });
 
@@ -35,6 +36,7 @@ module.exports = function(mongoose){//needs an instance of
     }, function(error, options){
         if(error){
             console.log(error);
+            return;
         }
     });
 

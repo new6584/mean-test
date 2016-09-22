@@ -51,7 +51,7 @@ export class LogInComponent{
         //load in encryption library 
         var self = this;
         this.encriptLib = require('../../library/sjcl/sjcl.js');
-        self.http.post("/nossl",{})
+        self.http.post("/nossl",{})//should be ssl
             .map(res => res.json())
             .subscribe(res => {
                 console.log(res);
@@ -92,8 +92,12 @@ export class LogInComponent{
     }
 
     forgotPassword(){//TODO: not implemented backend?
-        
-        console.log('forgot password');
+        this.http.post('/passwordRecover',{username: this.userInfo.userName, password: this.userInfo.password })
+        .map(res => res.json())
+        .subscribe(res => {
+            console.log(res);
+            alert('logged in');
+        });
     }
 
     forgotEmail(){//TODO: not implemented backend?

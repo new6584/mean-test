@@ -7,7 +7,8 @@ var userSchema = new Schema(
     password: {type: String , required: true},
     displayName: {type: String, unique:true, required: true},
     email:  {type: String, unique: true, required: true},
-    salt: {type: String,required:true}
+    salt: {type: String,required:true},
+    resetToken :{type: String, unique:true}
   }
 );
 userSchema.index({username: 1})
@@ -20,6 +21,7 @@ var tempUserSchema = new Schema(
     displayName: {type: String, unique:true, required: true},
     email:  {type: String, unique: true, required: true},
     salt: {type: String,required:true},
+    resetToken :{type: String, unique:true},
     GENERATED_VERIFYING_URL: {type:String}
   }
 );

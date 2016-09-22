@@ -1,16 +1,18 @@
 
-var express = require('express');//response.render('a.html')
+var express = require('express');
 var router = express.Router();
 var path = require('path');
 
 var schemas = require('../models/models'),
     mongoose = require('mongoose'),
-    emailer = require('../models/emailConfig.js')(mongoose);
+    verifyEmailer = require('../models/verifyEmailConfig.js')(mongoose),
+    genericMailer = require('../models/genericMailer.js'),
     sjcl = require('../../library/sjcl/sjcl.js');
 
 var User = schemas.User,
-    encryptKey = makeRandomWord(),
-    rootDir = path.dirname(require.main.filename)+'\\';
+    encryptKey = makeRandomWord(10),
+    rootDir = path.dirname(require.main.filename)+'\\',
+    passResetKey = "my|5:7gZmb5XH688v2F4%eIn)5`DD9";
 
 router.post('/register', function(request,response){
     var myUsername = request.body.username;
@@ -27,9 +29,10 @@ router.post('/register', function(request,response){
         password: myPassword,
         displayName: myDisplayname,
         email: myEmail,
-        salt: mySalt
+        salt: mySalt,
+        resetToken: ""
     });
-    emailer.createTempUser(newUser,function(err, existingPersistentUser, newTempUser){
+    verifyEmailer.createTempUser(newUser,function(err, existingPersistentUser, newTempUser){
          if (err){
              handleError('Registering User: CreateTempUser', err);
              return;
@@ -42,8 +45,8 @@ router.post('/register', function(request,response){
         }
         // a new user 
         if (newTempUser) {
-            var URL = newTempUser[emailer.options.URLFieldName];
-            emailer.sendVerificationEmail(myEmail, URL, function(err, info) {
+            var URL = newTempUser[verifyEmailer.options.URLFieldName];
+            verifyEmailer.sendVerificationEmail(myEmail, URL, function(err, info) {
                 if (err){
                    handleError('Making TempUser', err)
                    return;
@@ -61,21 +64,21 @@ router.post('/register', function(request,response){
 router.get("/email-verification*",function(request,response){
     var url = request.query.id;
     if(!url){
-        response.render(rootDir+'app\\views\\404.html');
+        //response.render(rootDir+'app\\views\\404.html');
     }
-    emailer.confirmTempUser(url,function(err,user){
+    verifyEmailer.confirmTempUser(url,function(err,user){
         if(err){
             handleError("Email-Verification: Migrating TempUser",err);
-            response.render(rootDir+'app\\views\\error');
+            //response.render(rootDir+'app\\views\\error');
             return;
         }
         if(user){
-            emailer.sendConfirmationEmail(user['email'],function(err,info){
-                response.render(rootDir+'app\\views\\');//user page
+            verifyEmailer.sendConfirmationEmail(user['email'],function(err,info){
+                //response.render(rootDir+'app\\views\\');//user page
             });
         }else{
             //signup expired
-            response.render(rootDir+'app\\views\\expired.html');
+            //response.render(rootDir+'app\\views\\expired.html');
         }
 
     });
@@ -87,16 +90,11 @@ router.post('/nossl',function(request,response){
 
 router.post('/login', function(request,response){
     //which name varification they wanna use
-    var selectObj;
-    if(request.body.username){
-        selectObj = {username: request.body.username};
-    }else if(request.body.email){
-        selectObj = {email: request.body.email};
-    }else{
+    var selectObj = getCredentials(request);
+    if(!selectObj){
         sendToClient(response,{error:"no_username"});
         return;
     }
-
     //check the db
     User.find(selectObj,function(err,user){
         if(err){ handleError("Login-Search Users: ",err); return; }
@@ -117,17 +115,47 @@ router.post('/login', function(request,response){
     });
 });
 
+router.post('/passwordRecover',function(request,response){
+    var selectObj = getCredentials(request);
+    if(!selectObj){
+        sendToClient(response,{error:"no_username"});
+        return;
+    }
+    User.find(selectObj,function(err,user){
+        if(err){ handleError("PassRecovery-Search Users: ",err); return; }
+        if(user.length != 1){
+            sendToClient(response,{error:"username_dne"});
+            return; 
+        }
+        //generate link
+        var encryptedLink =  sjcl.encrypt(passResetKey, makeRandomWord(30));
+        user.resetToken ='fuck';
+        
+        var email = user[0].email;
+        var subject = "Razu Password Reset <do not reply>";
+        var message = "Click the link below and follow the instructions to reset your password";
+        var link = rootDir+"?id="+encryptedLink;
+        //send email with password reset link
+        genericMailer.send(request,response,email,subject,message,link);
+    });
+});
 //HELPER FUNCTIONS//
 function saltyHash(pass, codedSalt){
-    var plaintext = sjcl.decrypt(encryptKey, pass);
+    var plaintext;
+    try{
+        plaintext = sjcl.decrypt(encryptKey, pass);
+    }catch(err){
+        console.log('non matching keys');
+        return null;
+    }
     var mySalt = sjcl.codec.base64.toBits(codedSalt);
     var hKey =sjcl.misc.pbkdf2(plaintext, mySalt, 1000, 256);
     return sjcl.codec.base64.fromBits(hKey);
 }
-function makeRandomWord(){
+function makeRandomWord(size){
     var text = "";
     var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    for( var i=0; i < 25; i++ )
+    for( var i=0; i < size; i++ )
         text += possible.charAt(Math.floor(Math.random() * possible.length));
     return text;
 }
@@ -137,6 +165,15 @@ function sendToClient(response, obj){
 function handleError(where,error){
     console.log(where);
     console.log(error);
+}
+function getCredentials(request){
+    var selectObj = null;
+    if(request.body.username){
+        selectObj = {username: request.body.username};
+    }else if(request.body.email){
+        selectObj = {email: request.body.email};
+    }
+    return selectObj;
 }
 
 module.exports = router;
