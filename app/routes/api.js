@@ -16,9 +16,11 @@ router.post('/register', function(request,response){
     var myUsername = request.body.username;
     var myEmail = request.body.email;
     var myDisplayname = request.body.displayName;
+    if(!myUsername || !myEmail || !myDisplayname ||!request.body.password){
+        sendToClient(response,{error:"missing_info"});
+        return;
+    }
     var mySalt = sjcl.codec.base64.fromBits(sjcl.random.randomWords(10));
-    //var mySalt = Buffer.alloc(rawSalt.length, rawSalt, 'base64');
-    //hash password
     var myPassword = saltyHash(request.body.password, mySalt);
     var newUser= new User({
         username: myUsername,
@@ -58,6 +60,9 @@ router.post('/register', function(request,response){
 
 router.get("/email-verification*",function(request,response){
     var url = request.query.id;
+    if(!url){
+        response.render(rootDir+'app\\views\\404.html');
+    }
     emailer.confirmTempUser(url,function(err,user){
         if(err){
             handleError("Email-Verification: Migrating TempUser",err);
@@ -89,6 +94,7 @@ router.post('/login', function(request,response){
         selectObj = {email: request.body.email};
     }else{
         sendToClient(response,{error:"no_username"});
+        return;
     }
 
     //check the db
