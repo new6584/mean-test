@@ -128,7 +128,7 @@ function makeRandomWord(){
 function sendToClient(response, obj){
     response.send(obj);
 }
-function handleError(where,error, sendErrorObj){
+function handleError(where,error){
     console.log(where);
     console.log(error);
 }
