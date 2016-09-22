@@ -9,7 +9,8 @@ var schemas = require('../models/models'),
     sjcl = require('../../library/sjcl/sjcl.js');
 
 var User = schemas.User,
-    encryptKey = makeRandomWord();
+    encryptKey = makeRandomWord(),
+    rootDir = path.dirname(require.main.filename)+'\\';
 
 router.post('/register', function(request,response){
     var myUsername = request.body.username;
@@ -28,7 +29,7 @@ router.post('/register', function(request,response){
     });
     emailer.createTempUser(newUser,function(err, existingPersistentUser, newTempUser){
          if (err){
-             console.log(err);
+             handleError('Registering User: CreateTempUser', err);
              return;
          }
         // user already exists in persistent collection... 
@@ -42,7 +43,8 @@ router.post('/register', function(request,response){
             var URL = newTempUser[emailer.options.URLFieldName];
             emailer.sendVerificationEmail(myEmail, URL, function(err, info) {
                 if (err){
-                   console.log(err); 
+                   handleError('Making TempUser', err)
+                   return;
                 }
                 console.log('sucess verification');
                 sendToClient(response,{verified:true});
@@ -58,17 +60,17 @@ router.get("/email-verification*",function(request,response){
     var url = request.query.id;
     emailer.confirmTempUser(url,function(err,user){
         if(err){
-            console.log(err);
+            handleError("Email-Verification: Migrating TempUser",err);
+            response.render(rootDir+'app\\views\\error');
+            return;
         }
         if(user){
             emailer.sendConfirmationEmail(user['email'],function(err,info){
-                //redirect
-                console.log("got here");
-                //response.redirect(staticRoot+"working");
+                response.render(rootDir+'app\\views\\');//user page
             });
         }else{
-            //redirect 
-            console.log('redir to signup');
+            //signup expired
+            response.render(rootDir+'app\\views\\expired.html');
         }
 
     });
@@ -77,6 +79,7 @@ router.get("/email-verification*",function(request,response){
 router.post('/nossl',function(request,response){
     sendToClient(response,{userVal:encryptKey});
 });
+
 router.post('/login', function(request,response){
     //which name varification they wanna use
     var selectObj;
@@ -84,20 +87,15 @@ router.post('/login', function(request,response){
         selectObj = {username: request.body.username};
     }else if(request.body.email){
         selectObj = {email: request.body.email};
-    }
-
-    //didnt send either option
-    if(!selectObj){
+    }else{
         sendToClient(response,{error:"no_username"});
-        console.log("no credentials")
-        return;
     }
 
     //check the db
     User.find(selectObj,function(err,user){
-        if(err){ console.log(err); }
+        if(err){ handleError("Login-Search Users: ",err); return; }
+
         if(user.length != 1){
-            console.log('no user of with info: '+selectObj[1]);
             sendToClient(response,{error:"username_dne"});
             return; 
         }
@@ -105,9 +103,8 @@ router.post('/login', function(request,response){
 
         if(myPass == user[0].password){
             //TODO: start passport, redirect user
-            console.log("logged in");
+            sendToClient(response,{success:true});
         }else{
-            console.log("bad pass");
             sendToClient(response,{error:"wrong_password"});
         }
 
@@ -131,6 +128,9 @@ function makeRandomWord(){
 function sendToClient(response, obj){
     response.send(obj);
 }
-
+function handleError(where,error, sendErrorObj){
+    console.log(where);
+    console.log(error);
+}
 
 module.exports = router;

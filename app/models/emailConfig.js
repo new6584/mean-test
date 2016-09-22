@@ -1,5 +1,5 @@
 var path = require('path');
-var staticRoot = path.dirname(require.main.filename);
+var staticRoot = path.dirname(require.main.filename)+'\\';
 var schemas = require('./models');
 console.log(staticRoot);
 module.exports = function(mongoose){//needs an instance of 
