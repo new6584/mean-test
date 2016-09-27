@@ -1,4 +1,3 @@
-/*
 
 
 import {Component} from '@angular/core';
@@ -14,12 +13,26 @@ import {Http, Headers} from '@angular/http';
                     <input id='login-password-entry' type='text' name='displayName' [(ngModel)]='userInfo.displayName'>
                     <p>email</p>
                     <input id='login-password-entry' type='text' name='email' [(ngModel)]='userInfo.email'>
-                    <input type="submit" value="Log in">
-                    <span class='login-extras'>
-                        <span class= 'login-click-able login-register' (click)="registerUser()">Register!</span>
-                        <span class= 'login-click-able login-forgotPassword' (click)="forgotPassword()">Forgot Password?</span>
-                        <span class= 'login-click-able login-forgotEmail' (click)="forgotEmail()">Forgot Email?</span> 
-                    </span>
+                    <input type="submit" value="Register">
                 </form> `
 })
-*/
+export class RegisterComponent{
+    http;
+    sjcl;
+    KEY;
+    userInfo ={
+        "userName": null,
+        "password": null,
+        "displayName": '',
+        "email":null
+    };
+    constructor(http: Http){
+        this.http = http;
+        this.sjcl = require('../../library/sjcl/sjcl.js');
+        this.KEY = "my|5:7gZmb5XH688v2F4%eIn)5`DD9";
+    }
+    submitRegister(){
+        console.log('clicked');
+    }
+    
+}

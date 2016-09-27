@@ -26,7 +26,7 @@ var sendMail = function(toAddress, subject, content, next){
   transporter.sendMail(mailOptions, next);
 }; 
 
-module.exports.send = function(req,res,toAddress,subject,message, link){
+module.exports.send = function(req,res,toAddress,subject,message, link, details){
   // specify jade template to load
   var template = appRoot + 'app\\views\\genericEmail.jade';
 
@@ -45,6 +45,7 @@ module.exports.send = function(req,res,toAddress,subject,message, link){
       var context = {
           title: subject,
           message: message,
+          details: details,
           link: link 
       };
       // get html back as a string with the context applied;

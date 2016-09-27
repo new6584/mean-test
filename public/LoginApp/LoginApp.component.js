@@ -19,14 +19,8 @@ var LogInComponent = (function () {
             "email": null
         };
         this.http = http;
-        var self = this;
         this.encriptLib = require('../../library/sjcl/sjcl.js');
-        self.http.post("/nossl", {})
-            .map(function (res) { return res.json(); })
-            .subscribe(function (res) {
-            console.log(res);
-            self.KEY = res.userVal;
-        });
+        this.KEY = "my|5:7gZmb5XH688v2F4%eIn)5`DD9";
     }
     LogInComponent.prototype.submitLogin = function () {
         if (this.userInfo.password.length <= 0) {

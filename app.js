@@ -8,8 +8,7 @@ var express = require('express'),
     staticRoot = __dirname + '/',
     api = require('./app/routes/api.js'),
     schemas = require('./app/models/models'),
-    mongoose = require('mongoose'),
-    emailer = require('email-verification')(mongoose);
+    mongoose = require('mongoose');
 
 app.set('port', (process.env.PORT || 3000));
 app.use(express.static(staticRoot));

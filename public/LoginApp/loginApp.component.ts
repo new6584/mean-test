@@ -48,15 +48,8 @@ export class LogInComponent{
     KEY;
     constructor(http: Http){
         this.http = http;
-        //load in encryption library 
-        var self = this;
         this.encriptLib = require('../../library/sjcl/sjcl.js');
-        self.http.post("/nossl",{})//should be ssl
-            .map(res => res.json())
-            .subscribe(res => {
-                console.log(res);
-                self.KEY = res.userVal;
-            });
+        this.KEY = "my|5:7gZmb5XH688v2F4%eIn)5`DD9";
     }
     
     submitLogin(){      

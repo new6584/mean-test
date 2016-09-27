@@ -9,17 +9,17 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var core_1 = require('@angular/core');
-var AppComponent = (function () {
-    function AppComponent() {
+var NotFound = (function () {
+    function NotFound() {
     }
-    AppComponent = __decorate([
+    NotFound = __decorate([
         core_1.Component({
-            selector: 'my-app',
-            template: '<h1>My First Angular 9-2 App</h1>'
+            selector: '404',
+            template: " <h1>404</h1> "
         }), 
         __metadata('design:paramtypes', [])
-    ], AppComponent);
-    return AppComponent;
+    ], NotFound);
+    return NotFound;
 }());
-exports.AppComponent = AppComponent;
-//# sourceMappingURL=app.component.js.map
+exports.NotFound = NotFound;
+//# sourceMappingURL=NotFound.component.js.map

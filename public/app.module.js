@@ -10,9 +10,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 var core_1 = require('@angular/core');
 var platform_browser_1 = require('@angular/platform-browser');
-var LoginApp_component_1 = require('./loginApp/LoginApp.component');
 var forms_1 = require('@angular/forms');
 var http_1 = require('@angular/http');
+var LoginApp_component_1 = require('./loginApp/LoginApp.component');
 var AppModule = (function () {
     function AppModule() {
     }
